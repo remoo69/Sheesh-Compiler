@@ -1,125 +1,191 @@
 import re
+import tokenclass as tk
 import pandas as pd
 from tabulate import tabulate
-DATA_TYPES=["text", "whole", "dec", "lit", "void"]
-RE_Literals={"text": r'^\"(?:(?:(?!(?<!\\)").) | (?:\\"))*$\"',
-              "whole": r'\d+', 
-              "dec": r'\d+\.\d+', 
-              "lit": r'(True|False)'}
+import constants as const
+import prepare as prep
+import tokenclass as tk
 
-RE_Identifier=r'[a-zA-Z_][a-zA-Z0-9_]{0,28}$'
+# This lexer follows the principle of longest match. It will match the longest possible token at each step.
 
-keywords = [ "text", "whole", "dec", "seq", "lit", "blank", "sheesh", "bruh", "steady", "tas", 
-    "or", "deins", "kung", "ehkung", "edi", "choice", "when", "go", "habang", "for", "to", 
-    "step", "termins", "gg", "use", "from", "as"]
-operators = [ "=", "+=", "-=", "*=", "/=", "%%=", "==", ">", ">=","<", "<=", "!=", "+", "-", "*", "/", "%%" ]
-symbols = ["#", "[", "]", "{", "}", "(", ")", ",", "/*", "*/", "//", """, """,".", ":", "::", "\n", " "]
+# Say for example that a token dec15# is passed. The lexer will detect the token line by line until a delimiter is found. Thus, 
+# Even if dec is a reserved word, the lexer will not detect it as such because it will be detected as an identifier due to the delimiter # being after the 15 value.
+# If dec were to be used as a keyword, the syntax should be: dec identifier=15#. Here, dec is detected as a keyword due to the delimiter {space}
 
-WHOLE_MIN=-32768
-WHOLE_MAX=32767
-DEC_MIN=-32768.999999
-DEC_MAX=32767.999999
+# Each function checks if a token is within a valid token type based on their respective regular expressions and delimiters.
+# As such, the delimiter of the token should be passed along with the token itself. Do note that the delimiter itself should be considered a token.
 
-class Token:
-    def __init__(self, type=None, value=None, line=None, position=None, quality=None):
-        self.type = type
-        self.value = value
-        self.line = line
-        self.position = position
-        self.quality=quality
-
-def file_to_string(file):
-    with open(file, "r") as f:
-        data = f.read()
-    return data
-
-def remove_comments(code):
-    # Remove block comments
-    code = re.sub(r'/\*.*?\*/', '', code, flags=re.DOTALL)
-    # Remove inline comments
-    code = re.sub(r'//.*?\n', '\n', code)
-    return code
-
-def remove_spaces(code):
-    # Remove spaces
-    code = re.sub(r'\s+', '', code)
-    return code
-
-def check_token_consistency(code: str):
-    if re.match(RE_Identifier, code):
-        return "Identifier"
-    elif re.match(RE_Literals["text"], code):
-        return "Text"
-    elif code.isdigit():
-        return "Digit"
-    elif code in operators:
-        return "Operator"
-    elif code in symbols:
-        return "Symbol"
+# Update: Let the inputs be a list of tokens per line. This way the lexer can check each token while keeping track of its delimiter while not having to include the delimiter itself in the detection.
+# This is so the lexer can detect the token type of the delimiters themselves.
+def is_Text(Token)->bool:
+    #Checks if a token has a valid delimiter for a text literal; returns true if all rules and conditions are met.
+    if re.match(const.RE_Literals["text"], Token):
+        return True
     else:
-        return "Mix"
-def prepare(code):
-#Prepares the code for tokenization. Removes comments, newline characters, and spaces after the terminator.
-#Also places each token in a list.   
-    lines=[]
-    tokens=[]
-    code=remove_comments(code)
-    lines=code.split("\n") #Splits the code into lines
-    for i in range(len(lines)):
-        if lines[i]=="": #Skips empty lines
-            continue
-        tokens=tokens+lines[i].split() #Splits each line into words
-    return tokens
+        return False
 
-
-
+def is_Identifier(Token):
+    if re.match(const.RE_Identifier, Token):
+        return True
+    else:
+        return False
     
-def is_Text(Token):
-    return re.match(RE_Literals["Text"], Token)
+def is_Whole(Token):
+    if re.match(const.RE_Literals["whole"], Token):
+        return True
+    else:
+        return False
 
+def is_Dec(Token):
+    if re.match(const.RE_Literals["pos_dec"], Token) or re.match(const.RE_Literals["neg_dec"], Token):
+        return True
+    else:
+        return False
 
-def tokenize(code):
-   
+# def is_Lit(Token):
+#     if Token in const.boolean:
+#         return True
+#     else:
+#         return False    
 
-    tokens = []
-    lines = code.split('\n')
-    for i, line in enumerate(lines):
-        words = line.split()
-        position = 0
-        for word in words:
-            if word in keywords:
-                tokens.append(Token('keyword', word, i+1, position+1))
-            elif word in operators:
-                tokens.append(Token('operator', word, i+1, position+1))
-            elif word in symbols:
-                tokens.append(Token('separator', word, i+1, position+1))
-            elif word.isdigit():
-                tokens.append(Token('number', int(word), i+1, position+1))
-            elif word.isalpha():
-                tokens.append(Token('identifier', word, i+1, position+1))
-            # else:
-            #     raise ValueError(f"Invalid token '{word}' at line {i+1}, position {position+1}")
-            position += len(word) + 1
-    return tokens
+#Needs further work
+def keyword_type(Token, delimiter):
+    #This function already returns the tokentype, 
+    for i in const.keywords:
+        pass
+        # if Token==and delimiter in const.delimiters["delim3"]:
+        # return True
 
+        # else:
+        #     return False
+
+#Might run into problems here because delimiters include characters as well, not just symbols
+def is_Symbol(Token):
+    if Token in const.symbols or Token in const.concat:
+        return True
+    else:
+        return False
+
+def is_Keyword(Token):
+    if Token in const.keywords:
+        return True
+    else: return False       
+
+# def tokenize(code):
+#    #Takes prepared code in lines and tokenizes each line. stores each token as an object
+#    for line in code:
+#          for token in line:
+#               i=0
+#               if is_Text(token):
+#                 return tk.Token(value=token, type="text", attribute="text", line=line)
+#               elif is_Whole(token):
+#                 return tk.Token(value=token, type="whole", attribute="whole")
+#               elif is_Dec(token):
+#                 return tk.Token(value=token, type="dec", attribute="dec")
+#             #   elif is_Lit(token):
+#             #     return tk.Token(value=token, type="lit", attribute="lit")
+#               elif keyword_type(token, token[i]):
+#                 return tk.Token(value=token, type="keyword", attribute="keyword")
+#               elif is_Identifier(token):
+#                 return tk.Token(value=token, type="identifier", attribute="identifier")
+#               elif is_Delimiter(token):
+#                 return tk.Token(value=token, type="delimiter", attribute="delimiter")
+#               else:
+#                 return tk.Token(value=token, type="error", attribute="error")
+
+def categorize(lexeme):
+    #Categorizes each token based on their type and attribute
+    #Takes a list of tokenized lines
+    if is_Keyword(lexeme):
+        return "Keyword"
+    elif is_Identifier(lexeme):
+        return "Identifier"
+    elif is_Symbol(lexeme):
+        return "Symbol"
+    elif is_Text(lexeme):
+        return "Text"
+    elif is_Whole(lexeme):
+        return "Whole"
+    elif is_Dec(lexeme):
+        return "Dec"
+    elif lexeme in const.boolean:
+        return "Lit"
+    elif lexeme is None:
+        pass
+    else:
+        return "Error Category"
+            
+    
+def error_handler(current, tokenized):
+    error_val = current
+    token_prev = tokenized[-1]
+    category = categorize(token_prev)
+    # This portion is for delimiter mismatches
+    if current is None or token_prev is None or current.isspace():
+        return "Invalid Null Delimiter"
+
+    # Categorize previously matched token
     
 
+    # Check if the delimiter is valid for the token category
+    if category == "Keyword":
+        if error_val not in const.keywords_delims[tokenized[-1]]:
+            return f"Invalid Delimiter for {category}"
+    elif category == "Identifier":
+        if error_val not in const.delimiters["id_delim"]:
+            return f"Invalid Delimiter for {category}"
+    elif category == "Symbol":
+        if error_val not in const.symbols_delims[tokenized[-1]]:
+            return f"Invalid Delimiter for {category}"
+    elif category == "Text":
+        if error_val not in const.delimiters["text_delim"]:
+            return f"Invalid Delimiter for {category}"
+    elif category in ["Whole", "Dec"]:
+        if error_val not in const.delimiters["n_delim"] :
+            return f"Invalid Delimiter for {category}"
+    elif category == "Error Category":
+        if error_val not in const.keywords_delims[tokenized[-1]]:
+            return f"Invalid Delimiter for {category}"
+    # if category=="Keyword":
+    #     if error_val not in const.keywords_delims[tokenized[-1]]:
+    #         return f"Invalid Delimiter for {category}"
+            
+    # elif category=="Identifier":
+    #     if error_val not in const.delimiters["id_delim"]:
+    #         return f"Invalid Delimiter for {category}"
+    # elif category=="Symbol": #pano gagawin ko dito tf
+    #     # if error_val not in const.keywords_delims[tokenized[len(tokenized)-1]]:
+    #     #     remaining=re.sub(re.escape(error_val), '',remaining, count=1)
+    #     #     return f"Invalid Delimiter for {category}", remaining
+    #     if error_val[0] not in const.symbols_delims[tokenized[len(tokenized)-1]]:
+    #         return f"Invalid Delimiter for {category}"
+        
+    # elif category=="Text":
+    #     if error_val not in const.delimiters["text_delim"]:
+    #         return f"Invalid Delimiter for {category}"
+    # elif category=="Whole":
+    #     if error_val not in const.delimiters["n_delim"]:
+    #         return f"Invalid Delimiter for {category}"
+    # elif category=="Dec":
+    #     if error_val not in const.delimiters["n_delim"]:
+    #         return f"Invalid Delimiter for {category}"
+    # elif category=="Error Category": #This portion should handle if the previous token is also not a valid token
+    #     if error_val not in const.keywords_delims[tokenized[len(tokenized)-1]]:
+    #         return f"Invalid Delimiter for {category}"
+    else: #if not delim error, then could be token syntax error. 
+        return "Invalid Token Syntax"
+    # print("Error: " + error + " at line " + str(line) + ", position " + str(position) + "."
+    # if current is not None:
+    #     print(f"Error at {current}")
+    #     remaining=re.sub(re.escape(current), '',remaining, count=1)
+# def main():
+#     code = prep.file_to_string(r"C:\Users\anton\Desktop\input1.sheesh")
+#     tokens = prep.prepare(code)
+#     tokenized=tokenize(tokens)
+#     # tokens_dict = {token.value: token.quality for token in tokens}
+#     # df = pd.DataFrame(tokens_dict.items(), columns=['Token', 'Tag'])
+#     # print(tabulate(df, headers='keys', tablefmt='psql'))
+#     print(tokens)
+#     print(tokenized)
 
-def main():
-    code = file_to_string(r"C:\Users\anton\Desktop\input1.sheesh")
-    # tokens = tokenize(code)
-    # for token in tokens:
-    # print(remove_spaces(remove_comments(code)))
-    prepcode=prepare(code)
-    tags=[]
-    # print(prepcode)
-    for i in range(len(prepcode)):
-        tags.append(check_token_consistency(prepcode[i]))
-
-    data={"Token": prepcode, "Tag": tags}
-    df=pd.DataFrame(data)
- 
-    print(tabulate(df, headers='keys', tablefmt='psql'))
-    print(re.match(RE_Identifier, "zzz===5"))
-
-main()
+# main()
