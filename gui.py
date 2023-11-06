@@ -22,17 +22,22 @@ root.title("Sheesh Compiler")
 
 
 
-# configure background color
-root.configure(bg="#2D2D2D")
+# config color collection
+clr_bg = "#2D2D2D"
+clr_black = "#202020"
+clr_gray = "#272727"
 
+root.configure(bg=clr_bg)
+
+# style scrollbar
 style = ttk.Style()
-style.theme_use("clam")  # Use the "clam" theme, which works well with customizations
-style.configure("Vertical.TScrollbar", troughcolor="#202020", background="#202020", gripcount=0, gripcolor="#202020")
+style.theme_use("clam")  
+style.configure("Vertical.TScrollbar", troughcolor=clr_black, background=clr_black, gripcount=0, gripcolor=clr_black)
 
 # setting main layout
 mainpane = Canvas(
     root,
-    bg="#202020",
+    bg=clr_black,
     height=617,
     width=939,
     bd=0,
@@ -44,7 +49,7 @@ mainpane.place(x=0,y=0)
 # setting editor section
 txt_editor_pane = Text(
     bd=0,
-    bg="#272727",
+    bg=clr_gray,
     # highlightcolor=
     highlightthickness=0,
     fg="#FFFFFF",
@@ -59,7 +64,7 @@ txt_editor_pane.place(x=10,y=40,
 # setting lexer output section
 lex_table_pane = Text(
     bd=0,
-    bg="#272727",
+    bg=clr_gray,
     highlightthickness=0,
     fg="#211B36",
     padx=10,
@@ -76,7 +81,7 @@ lex_table_pane.place(
 # header section
 header_pane = Text(
     bd = 0,
-    bg = "#272727",
+    bg = clr_gray,
     padx = 10,
     pady = 10,
     font = ('Open Sans', 10),
@@ -99,7 +104,7 @@ header_pane.place(
 # setting lexer output section
 err_pane = Text(
     bd=0,
-    bg="#272727",
+    bg=clr_gray,
     highlightthickness=0,
     fg="#211B36",
     padx=10,
@@ -116,7 +121,7 @@ run_img = PhotoImage(file="assets/run.png")
 lex_btn = Button(
         image=run_img,
         compound=LEFT,
-        bg="#272727",
+        bg=clr_gray,
         borderwidth=0,
         highlightthickness=0,
         activebackground="#AAAAAA",
