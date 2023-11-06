@@ -4,10 +4,10 @@ keywords = ["text", "whole", "dec", "lit", "blank", "sheesh", "bruh", "steady",
             "kung", "ehkung", "deins", "choice", "when", "habang", "for", "to", 
             "step", "termins", "gg", "use", "from"]
 DATA_TYPES=["text", "whole", "dec", "lit", "blank"]
-
+valid_tokens=["Keyword", "Identifier", "Dec", "Whole", "Symbol", "Operator", "Text", "Lit", "Whitespace"]
 #Regular Definitions
-zero = [0]
-digits = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+zero = ['0']
+digits = ['1', '2', '3', '4', '5', '6', '7', '8', '9']
 abc_small = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
 abc_cap = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
 nums = zero+digits
@@ -31,6 +31,9 @@ comments = alph_num+symbols
 text = alph_num+esc_seq+op+comma+space+['#', '_', '.', '@', '^', '&', '(', ')', '`', '~', ':', '?', '$', ';', '[', ']', '{', '}', '/', '`', '^']
 single_symbols=aop+rop2+lop+comma
 compound_symbols=asop+rop1+concat
+all_op=op+asop+rop1+lop+comma+concat+rop2
+non_op=comma+['#', '_', '.', '@', '^', '&', '(', ')', '`', '~', ':', '?', '$', ';', '[', ']', '{', '}', '/', '`', '^']
+whitespace=space+['\n', '\t']
 #Delimiters used in the Transition Diagram/DFA
 delimiters = {
     "op": op,
@@ -129,7 +132,7 @@ RE_Literals={"text": r'^\"(?:(?!(?<!\\)").|\\")*\"$',
               "neg_dec": r'^\(-(?!0+(\.0+)?)\d{1,5}\.\d{1,6}\)$',
               "lit": boolean}
 
-RE_Identifier=r'[a-zA-Z_][a-zA-Z0-9_]{0,8}$'
+RE_Identifier=r'[a-zA-Z_][a-zA-Z0-9_]*$' #removed {0,8}
 RE_BlockComment=r'/\*.*?\*/'
 RE_InlineComment=r'//.*?\n'
 

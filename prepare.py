@@ -21,6 +21,15 @@ def remove_comments(code):
     code = re.sub(const.RE_InlineComment, '\n', code)
     return code
     
+def remove_whitespace_type(tokens, category):
+    new_tokens = []
+    new_category = []
+    for i in range(len(tokens)):
+        if category[i] != "Whitespace":
+            new_tokens.append(tokens[i])
+            new_category.append(category[i])
+    return new_tokens, new_category
+
 def getlines(code):
     #Splits the code into lines
     lines=[]
@@ -48,7 +57,6 @@ def get_whole(token):
             return temp_token, token_cpy       
         else:
             temp_token+=char
-
     
 def get_dec(token):
     token_cpy=''
@@ -78,8 +86,7 @@ def get_keyword(token):
             return temp_token, token_cpy       
         else:
             temp_token+=char
-
-    
+   
 def get_identifier(token):
     token_cpy=''
     temp_token=''
@@ -91,10 +98,10 @@ def get_identifier(token):
             temp_token+=char
 
     
+    
 def get_symbol(token):
     token_cpy=''
     next_temp=''
-    symbol_detected=False
     for i, char in enumerate(token):
          if char in const.symbols:
             try:
@@ -106,14 +113,15 @@ def get_symbol(token):
             if next_next_temp=="...":
                 token_cpy = re.sub(re.escape(next_next_temp), '', token, count=1)
                 return next_next_temp, token_cpy    
-            if next_temp in const.compound_symbols:
+            elif next_temp in const.compound_symbols:
                 token_cpy = re.sub(re.escape(next_temp), '', token, count=1)
                 return next_temp, token_cpy
             else:
                 token_cpy = re.sub(re.escape(char), '', token, count=1)
-                return char, token_cpy
-
-
+            return char, token_cpy
+         else:
+            return None
+            
 
 def get_space(token):
     token_cpy=''
@@ -124,7 +132,6 @@ def get_space(token):
         if re.match(space, char):
             token_cpy=re.sub(space, '',token, count=1)
             return char, token_cpy       
-
     
 def get_text(token):
     #Returns the text token and the remaining code
@@ -141,9 +148,15 @@ def get_text(token):
             return temp_token, token_cpy       
         else:
             temp_token+=char
+
+def get_next_char(input_string, current_index):
+    if current_index < len(input_string)-1:
+        return input_string[current_index+1]
+    else:
+        return None
         
 
-        
+
 def gettokens(code):
     # Iterate through a line of code per character and return as a list of tokens
     # Check each character
@@ -191,18 +204,49 @@ def gettokens(code):
             else: continue
             tktype = "symbol"
         else:
-           error=lex.error_handler(tokencode, tokens)
-           tokencode=re.sub(re.escape(errortoken), '', tokencode, count=1)
+            print(f"may pumasok dito tc:{tokencode} ct:{current_token} t:{tokens}")
+            if tokencode:
+                print("outerif")
+                if current_token is None or current_token=='':
+                    print("interrif")
+                    current_token=tokencode
+                    tokens.append(tokencode)
+                    tokencode=None
+                    tokens.append(None)
+                    break
+            # if current_token[-1]
+        #    print(f"pasok sa else par {current_token}, {tokencode}, {tokens}")
+        #    current_token=tokencode
+        #    tokencode=None
+        #    if current_token is None or current_token=='' or current_token==' ':
+        #        print("pumasok sa if")
+        #        error=lex.error_handler(None, tokens, None)
+        #        print(error)
+        #    else:
+        #     # print("Else loob gettokens")
+        #     # category=lex.categorize(current_token)
+        #     # error=lex.error_handler(current_token, tokens, tokencode)
+        #     # print(error," for ", current_token)
+        #     print(f"Pumasok sa else, {tokencode} {current_token} ")
+        #     tokens.append(current_token)
+        #     current_token=''
         
-        if current_token is not None:
+            
+            
+            else:
+                print("else labas")
+                tokens.append("None")
+                break
+            
+        
+        if current_token:
                 tokens.append(current_token)
                 current_token = ''
-
+        else: #Handles null chars
+            print("Else labas gettokens")
+            error=lex.error_handler(None, tokens, None)
+            print(error, "for", current_token)
     return tokens
-
-
-
-
 
 def prepare(code):
 #Prepares the code for tokenization. Removes comments, extra newline characters, and extra spaces.
@@ -210,7 +254,7 @@ def prepare(code):
     templines=getlines(remove_comments(code))
     lines=[] 
     for i in range(len(templines)):
-        if templines[i]=="": #Skips empty lines
-            continue
+        # if templines[i]=="": #Skips empty lines
+        #     continue
         lines.append(templines[i])
     return lines
