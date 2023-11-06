@@ -5,10 +5,16 @@ This Compiler was made as part of the requirements for our subject: Automata The
 
 The Developers of this compiler are named below:
 
-Pateno, Romeo II
-Cerezo, Christelle
-David, Jed Laurence
-Linghon, Patricia
-Pascual, Kaye Alex
-Rivera, Greg Andrew
-Vallar, Vanessa
+    Pateno, Romeo II
+    
+    Cerezo, Christelle
+    
+    David, Jed Laurence
+    
+    Linghon, Patricia
+    
+    Pascual, Kaye Alex
+    
+    Rivera, Greg Andrew
+    
+    Vallar, Vanessa
