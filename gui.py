@@ -11,16 +11,11 @@ def fill_err_table():
 def fill_lex_table():
     pass
 
-
-
-
 root = Tk()
 
 root.geometry("939x617")
 root.resizable(False,False)
 root.title("Sheesh Compiler")
-
-
 
 # config color collection
 clr_bg = "#2D2D2D"
