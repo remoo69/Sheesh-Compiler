@@ -29,6 +29,9 @@ def print_lex(value, type):                      # Print Text to Lexical Pane
     lex_table_pane.delete('1.0', constants.END)
     lex_table_pane.insert(constants.END, "LEXEME\t\t\tTOKEN\n\n")
     token,category=prep.remove_whitespace_type(value,type)
+    for j,char in enumerate(token):
+        if category[j]=="Keyword" or category[j]=="Symbol" or category[j]=="Operator":
+            category[j]=char
     for i in range(len(token)):
         # if type[i] == 'Error Category' or type[i] == 'Whitespace' or type[i] == 'None':
         #     continue

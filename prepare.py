@@ -3,7 +3,6 @@
 import constants as const
 import re
 import lexerpy as lex
-import time
 
 def file_to_string(file):
     try:
@@ -44,6 +43,7 @@ def get_delim_key(delim_char):
 
 # def get_delim(token):
 #     pass
+
 
 def get_whole(token):
     token_cpy=''
@@ -104,19 +104,28 @@ def get_symbol(token):
     next_temp=''
     for i, char in enumerate(token):
          if char in const.symbols:
-            try:
+            try:                    
+                # n =#
                 next_temp = char + token[i + 1]
                 next_next_temp = str(next_temp + token[i + 2])
             except IndexError:
                 next_temp += char
                 next_next_temp = ''
             if next_next_temp=="...":
+                if token[i+3] not in const.symbols_delims[next_next_temp]:
+                    return None
                 token_cpy = re.sub(re.escape(next_next_temp), '', token, count=1)
                 return next_next_temp, token_cpy    
             elif next_temp in const.compound_symbols:
+                if token[i+2] not in const.symbols_delims[next_temp]:
+                    return None
                 token_cpy = re.sub(re.escape(next_temp), '', token, count=1)
                 return next_temp, token_cpy
             else:
+                # if len(token)==1 and lex.is_Symbol(token):
+                #     return token, None
+                # if token[i+1] not in const.symbols_delims[char] :
+                #     return None
                 token_cpy = re.sub(re.escape(char), '', token, count=1)
             return char, token_cpy
          else:
