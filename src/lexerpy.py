@@ -42,11 +42,7 @@ def is_Dec(Token):
     else:
         return False
 
-# def is_Lit(Token):
-#     if Token in const.boolean:
-#         return True
-#     else:
-#         return False    
+   
 
 #Needs further work
 def keyword_type(Token, delimiter):
@@ -60,8 +56,14 @@ def keyword_type(Token, delimiter):
         #     return False
 
 #Might run into problems here because delimiters include characters as well, not just symbols
+def is_Operator(Token):
+    if Token in const.all_op:
+        return True
+    else:
+        return False
+    
 def is_Symbol(Token):
-    if Token in const.symbols or Token in const.concat:
+    if Token in const.non_op:
         return True
     else:
         return False
@@ -71,35 +73,21 @@ def is_Keyword(Token):
         return True
     else: return False       
 
-# def tokenize(code):
-#    #Takes prepared code in lines and tokenizes each line. stores each token as an object
-#    for line in code:
-#          for token in line:
-#               i=0
-#               if is_Text(token):
-#                 return tk.Token(value=token, type="text", attribute="text", line=line)
-#               elif is_Whole(token):
-#                 return tk.Token(value=token, type="whole", attribute="whole")
-#               elif is_Dec(token):
-#                 return tk.Token(value=token, type="dec", attribute="dec")
-#             #   elif is_Lit(token):
-#             #     return tk.Token(value=token, type="lit", attribute="lit")
-#               elif keyword_type(token, token[i]):
-#                 return tk.Token(value=token, type="keyword", attribute="keyword")
-#               elif is_Identifier(token):
-#                 return tk.Token(value=token, type="identifier", attribute="identifier")
-#               elif is_Delimiter(token):
-#                 return tk.Token(value=token, type="delimiter", attribute="delimiter")
-#               else:
-#                 return tk.Token(value=token, type="error", attribute="error")
+def is_Numeric(Token):
+    if is_Whole(Token) or is_Dec(Token):
+        return True
+    else: return False
 
-def categorize(lexeme):
+
+def categorize(lexeme:str):
     #Categorizes each token based on their type and attribute
     #Takes a list of tokenized lines
     if is_Keyword(lexeme):
         return "Keyword"
-    elif is_Identifier(lexeme):
+    elif is_Identifier(lexeme) and len(lexeme)<=9:
         return "Identifier"
+    elif is_Operator(lexeme):
+        return "Operator"
     elif is_Symbol(lexeme):
         return "Symbol"
     elif is_Text(lexeme):
@@ -111,73 +99,87 @@ def categorize(lexeme):
     elif lexeme in const.boolean:
         return "Lit"
     elif lexeme is None:
-        pass
+        print("lex is none")
+    elif lexeme in const.whitespace:
+        return "Whitespace"
     else:
         return "Error Category"
             
     
-def error_handler(current, tokenized):
+def error_handler(current, tokenized, remaining):
     error_val = current
-    token_prev = tokenized[-1]
-    category = categorize(token_prev)
-    # This portion is for delimiter mismatches
-    if current is None or token_prev is None or current.isspace():
-        return "Invalid Null Delimiter"
+    try:
+        if current=='' or current is None:
+            return f"Type 1 Invalid Null Delimiter for \"{tokenized[-1]}\", remaining: {remaining}"
+        # This portion is for delimiter mismatches
+        if remaining is None and not is_Symbol(error_val):
+            return f"Type 2 Invalid Null Delimiter for \"{current}\""
 
-    # Categorize previously matched token
+        if is_Identifier(error_val) and len(error_val)>9:
+            return f"Type 3 Identifier {error_val} contains legal characters but is too long "
+        # Categorize previously matched token
+        token_prev = tokenized[-1]
+        category = categorize(token_prev)
+
+        # Check if the delimiter is valid for the token category (prev)
+        if category == "Keyword":
+            if error_val not in const.keywords_delims[tokenized[-1]]:
+                return f"Invalid Delimiter for \"{category}\", \"{token_prev}\""
+        elif category == "Identifier":
+            if error_val not in const.delimiters["id_delim"]:
+                return f"Invalid Delimiter for \"{category}\", \"{token_prev}\""
+        elif category == "Error Category":
+            if error_val not in const.keywords_delims[tokenized[-1]]:
+                return f"{error_val} Invalid Syntax for Token"
+        elif category == "Symbol":
+            if not is_Numeric(error_val) and not is_Identifier(error_val) and not is_Operator(error_val):
+                return f"{error_val} Invalid Delimiter for \"{category}\", \"{token_prev}\""
+        elif category == "Operator":
+            if error_val not in const.delimiters["op"]:
+                return f"Invalid Delimiter for \"{category}\", \"{token_prev}\""
+        elif category == "Text":
+            if error_val not in const.delimiters["txt_delim"] and error_val not in const.concat:
+                return f"Invalid Delimiter for \"{category}\", \"{token_prev}\""
+        elif category in ["Whole", "Dec"]:
+            if error_val not in const.delimiters["n_delim"] :
+                return f"Invalid Delimiter for \"{category}\", \"{token_prev}\""
+        elif category=="Whitespace":
+            if error_val not in const.delimiters["space_delim"] or categorize(error_val) not in const.valid_tokens:
+                return f"Invalid Delimiter for \"{category}\", \"{token_prev}\""
+
+        
+        else: #if not delim error, then could be token syntax error. 
+            return "Invalid Token Syntax"
+        
+    except IndexError:
+        return "Invalid Delimiter and Statement"
     
 
-    # Check if the delimiter is valid for the token category
-    if category == "Keyword":
-        if error_val not in const.keywords_delims[tokenized[-1]]:
-            return f"Invalid Delimiter for {category}"
-    elif category == "Identifier":
-        if error_val not in const.delimiters["id_delim"]:
-            return f"Invalid Delimiter for {category}"
-    elif category == "Symbol":
-        if error_val not in const.symbols_delims[tokenized[-1]]:
-            return f"Invalid Delimiter for {category}"
-    elif category == "Text":
-        if error_val not in const.delimiters["text_delim"]:
-            return f"Invalid Delimiter for {category}"
-    elif category in ["Whole", "Dec"]:
-        if error_val not in const.delimiters["n_delim"] :
-            return f"Invalid Delimiter for {category}"
-    elif category == "Error Category":
-        if error_val not in const.keywords_delims[tokenized[-1]]:
-            return f"Invalid Delimiter for {category}"
-    # if category=="Keyword":
-    #     if error_val not in const.keywords_delims[tokenized[-1]]:
-    #         return f"Invalid Delimiter for {category}"
+def tokenize(codes):
+    lines = prep.prepare(codes)
+    tokens=[]
+    category=[]
+    error=[]
+    for i,line in enumerate(lines):
+        lexeme=prep.gettokens(line)
+        for j,token in enumerate(lexeme):
+            if token is None or categorize(token) not in const.valid_tokens:
+                print(token,"errcat")
+                errortype=error_handler(token, tokens, lexeme[j+1:])
+                error.append(f"Line {i+1}: {errortype}")
+            else:
+                tokens.append(token)
+                category.append(categorize(token))
             
-    # elif category=="Identifier":
-    #     if error_val not in const.delimiters["id_delim"]:
-    #         return f"Invalid Delimiter for {category}"
-    # elif category=="Symbol": #pano gagawin ko dito tf
-    #     # if error_val not in const.keywords_delims[tokenized[len(tokenized)-1]]:
-    #     #     remaining=re.sub(re.escape(error_val), '',remaining, count=1)
-    #     #     return f"Invalid Delimiter for {category}", remaining
-    #     if error_val[0] not in const.symbols_delims[tokenized[len(tokenized)-1]]:
-    #         return f"Invalid Delimiter for {category}"
-        
-    # elif category=="Text":
-    #     if error_val not in const.delimiters["text_delim"]:
-    #         return f"Invalid Delimiter for {category}"
-    # elif category=="Whole":
-    #     if error_val not in const.delimiters["n_delim"]:
-    #         return f"Invalid Delimiter for {category}"
-    # elif category=="Dec":
-    #     if error_val not in const.delimiters["n_delim"]:
-    #         return f"Invalid Delimiter for {category}"
-    # elif category=="Error Category": #This portion should handle if the previous token is also not a valid token
-    #     if error_val not in const.keywords_delims[tokenized[len(tokenized)-1]]:
-    #         return f"Invalid Delimiter for {category}"
-    else: #if not delim error, then could be token syntax error. 
-        return "Invalid Token Syntax"
-    # print("Error: " + error + " at line " + str(line) + ", position " + str(position) + "."
-    # if current is not None:
-    #     print(f"Error at {current}")
-    #     remaining=re.sub(re.escape(current), '',remaining, count=1)
+            # elif 
+
+            
+    
+    # error=error_handler
+    return tokens, category, error
+
+
+
 # def main():
 #     code = prep.file_to_string(r"C:\Users\anton\Desktop\input1.sheesh")
 #     tokens = prep.prepare(code)
