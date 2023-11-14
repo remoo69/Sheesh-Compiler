@@ -1,0 +1,18 @@
+use something from somewhere#
+//Ito ay sample lamang ng in-line comment whole dec sheesh
+/* Ito naman ay halimbawa ng isang block comment
+tignan natin kung kasama pati dito */
+
+sheesh(){
+    whole buo=5#
+    dec ewan=5.5#
+    dec nega=(-6.9)#
+    text sana="pumasa tayo"#
+    bigay("Ito ang mga bagay"..."legit idk")#
+    bruh 0#
+}
+
+this should be an error
+dec 12 =# 5
+
+idtnidentifier

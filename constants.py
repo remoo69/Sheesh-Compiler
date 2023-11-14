@@ -132,7 +132,7 @@ RE_Literals={"text": r'^\"(?:(?!(?<!\\)").|\\")*\"$',
               "neg_dec": r'^\(-(?!0+(\.0+)?)\d{1,5}\.\d{1,6}\)$',
               "lit": boolean}
 
-RE_Identifier=r'[a-zA-Z_][a-zA-Z0-9_]*$' #removed {0,8}
+RE_Identifier=r'[a-zA-Z][a-zA-Z0-9_]*$' #removed {0,8}
 RE_BlockComment=r'/\*.*?\*/'
 RE_InlineComment=r'//.*?\n'
 

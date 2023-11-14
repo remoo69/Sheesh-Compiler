@@ -1,7 +1,6 @@
 import re
 import tokenclass as tk
 import pandas as pd
-from tabulate import tabulate
 import constants as const
 import prepare as prep
 import tokenclass as tk
@@ -17,26 +16,27 @@ import tokenclass as tk
 
 # Update: Let the inputs be a list of tokens per line. This way the lexer can check each token while keeping track of its delimiter while not having to include the delimiter itself in the detection.
 # This is so the lexer can detect the token type of the delimiters themselves.
-def is_Text(Token)->bool:
+def is_Text(Token:str)->bool:
     #Checks if a token has a valid delimiter for a text literal; returns true if all rules and conditions are met.
     if re.match(const.RE_Literals["text"], Token):
+        #for i in Token
         return True
     else:
         return False
 
-def is_Identifier(Token):
+def is_Identifier(Token:str):
     if re.match(const.RE_Identifier, Token):
         return True
     else:
         return False
     
-def is_Whole(Token):
+def is_Whole(Token:str):
     if re.match(const.RE_Literals["whole"], Token):
         return True
     else:
         return False
 
-def is_Dec(Token):
+def is_Dec(Token:str):
     if re.match(const.RE_Literals["pos_dec"], Token) or re.match(const.RE_Literals["neg_dec"], Token):
         return True
     else:
@@ -78,6 +78,10 @@ def is_Numeric(Token):
         return True
     else: return False
 
+def is_Literal(Token):
+    if is_Text(Token) or is_Numeric(Token):
+        return True
+    else: return False
 
 def categorize(lexeme:str):
     #Categorizes each token based on their type and attribute
@@ -105,15 +109,27 @@ def categorize(lexeme:str):
     else:
         return "Error Category"
             
-    
+def is_Valid_Token(Token:str):
+    if is_Numeric(Token) or (is_Identifier(Token) and len(Token)<=10) or is_Keyword(Token) or is_Literal(Token) or is_Symbol(Token) or is_Operator(Token):
+        return True
+    else: return False
+
 def error_handler(current, tokenized, remaining):
+    print(f"pumasok ay {current, tokenized, remaining}")
     error_val = current
     try:
+                    
         if current=='' or current is None:
             return f"Type 1 Invalid Null Delimiter for \"{tokenized[-1]}\", remaining: {remaining}"
         # This portion is for delimiter mismatches
         if remaining is None and not is_Symbol(error_val):
             return f"Type 2 Invalid Null Delimiter for \"{current}\""
+        
+        if not is_Valid_Token(current):
+            return f"{current} is not a valid Token"
+
+        if categorize(error_val) == "Error Category":
+                return f"{error_val} Invalid Syntax for Token"
 
         if is_Identifier(error_val) and len(error_val)>9:
             return f"Type 3 Identifier {error_val} contains legal characters but is too long "
@@ -128,14 +144,11 @@ def error_handler(current, tokenized, remaining):
         elif category == "Identifier":
             if error_val not in const.delimiters["id_delim"]:
                 return f"Invalid Delimiter for \"{category}\", \"{token_prev}\""
-        elif category == "Error Category":
-            if error_val not in const.keywords_delims[tokenized[-1]]:
-                return f"{error_val} Invalid Syntax for Token"
         elif category == "Symbol":
             if not is_Numeric(error_val) and not is_Identifier(error_val) and not is_Operator(error_val):
                 return f"{error_val} Invalid Delimiter for \"{category}\", \"{token_prev}\""
         elif category == "Operator":
-            if error_val not in const.delimiters["op"]:
+            if error_val not in const.delimiters["op"] and not is_Literal(error_val) and not is_Identifier(error_val):
                 return f"Invalid Delimiter for \"{category}\", \"{token_prev}\""
         elif category == "Text":
             if error_val not in const.delimiters["txt_delim"] and error_val not in const.concat:
