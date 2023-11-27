@@ -1,0 +1,22 @@
+'''tokenize w/ gettokens(code/lines)->arr of token obj / list of tokens+type
+
+general tokenization: 
+    for char in code:
+        if char is valid:
+            add to current token
+            if token is valid and has valid delim:
+                    return token or token obj
+        else:
+            return error
+
+newtok(code/lines)->token obj:
+    build tokens -> should return token, remaining and error, (error type? delim?)
+    if built token is valid, return token obj
+    else append to error vals
+
+
+    if error: error handler->input(unbuilt tok, error val, remaining code, tokensarr)
+                            ->output(token obj w/ errortype, remaining code, tokensarr)
+
+
+'''
