@@ -3,6 +3,8 @@
 import constants as const
 import re
 import lexerpy as lex
+import tokenclass as tkc
+#region functions
 
 def file_to_string(file):
     try:
@@ -19,6 +21,52 @@ def remove_comments(code):
     # Remove inline comments
     code = re.sub(const.RE_InlineComment, '\n', code)
     return code
+
+def get_block_comments(input_code):
+    output_code = ""
+    in_block_comment = False
+
+    i = 0
+    while i < len(input_code):
+        if input_code[i:i+2] == '/*' and not in_block_comment:
+            in_block_comment = True
+            i += 2
+        elif input_code[i:i+2] == '*/' and in_block_comment:
+            in_block_comment = False
+            i += 2
+        elif not in_block_comment:
+            output_code += input_code[i]
+            i += 1
+        else:
+            i += 1
+
+    return output_code
+
+def get_inline_comments(input_code):
+    token = ""
+    in_inline_comment = False
+
+    i = 0
+    while i < len(input_code):
+        if input_code[i:i+2] == '//' and not in_inline_comment:
+            in_inline_comment = True
+            token+=input_code[i:i+2]
+            i += 2
+        if input_code[i] is (None or '\n') and in_inline_comment:
+            in_inline_comment = False
+            break
+        if in_inline_comment:
+            token += input_code[i]
+            i += 1
+        else: return None
+    return token
+
+# def remove_comments(code):
+#     # Remove block comments
+#     code = remove_block_comments(code)
+#     # Remove inline comments
+#     code = remove_inline_comments(code)
+#     return code
     
 def remove_whitespace_type(tokens, category):
     new_tokens = []
@@ -41,19 +89,17 @@ def get_delim_key(delim_char):
             return key
     return None
 
-# def get_delim(token):
-#     pass
-
 
 def get_whole(token):
     token_cpy=''
     temp_token=''
 
     for char in token:
-        if char is None:
-            return '',token
-        if char in const.delimiters["n_delim"] and lex.is_Whole(temp_token):
-            token_cpy=re.sub(temp_token, '',token, count=1)
+        # if char is None:
+        #     print("charnone")
+        #     return '',token
+        if char in const.delimiters["n_delim"] and tkc.LexerCheck.is_Whole(temp_token):
+            token_cpy=token.replace(temp_token, '', 1)
             return temp_token, token_cpy       
         else:
             temp_token+=char
@@ -63,8 +109,9 @@ def get_dec(token):
     temp_token=''
     dec_detected=False
     for char in token:
-        if char in const.delimiters["n_delim"] and lex.is_Dec(temp_token):
-            token_cpy=re.sub(re.escape(temp_token), '',token, count=1)
+        if char in const.delimiters["n_delim"] and tkc.LexerCheck.is_Dec(temp_token):
+            # token_cpy=re.sub(re.escape(temp_token), '',token, count=1)
+            token_cpy=token.replace(temp_token, '', 1) 
             return temp_token, token_cpy       
         else:
             temp_token+=char
@@ -81,7 +128,8 @@ def get_keyword(token):
         if temp_token is None:
             return '',token
         if temp_token in const.keywords and char in const.keywords_delims[temp_token]:
-            token_cpy=re.sub(temp_token, '',token, count=1)
+            # token_cpy=re.sub(temp_token, '',token, count=1)
+            token_cpy=token.replace(temp_token, '', 1)
             keyword_detected=True
             return temp_token, token_cpy       
         else:
@@ -91,56 +139,84 @@ def get_identifier(token):
     token_cpy=''
     temp_token=''
     for char in token:
-        if char in const.delimiters["id_delim"] and lex.is_Identifier(temp_token):
-            token_cpy=re.sub(temp_token, '',token, count=1)
+        if char in const.delimiters["id_delim"] and tkc.LexerCheck.is_Identifier(temp_token):
+            # token_cpy=re.sub(temp_token, '',token, count=1)
+            token_cpy=token.replace(temp_token, '', 1)
             return temp_token, token_cpy       
         else:
             temp_token+=char
-
-    
-    
-def get_symbol(token):
-    token_cpy=''
-    next_temp=''
-    for i, char in enumerate(token):
-         if char in const.symbols:
-            try:                    
-                # n =#
-                next_temp = char + token[i + 1]
-                next_next_temp = str(next_temp + token[i + 2])
-            except IndexError:
-                next_temp += char
-                next_next_temp = ''
-            if next_next_temp=="...":
-                if token[i+3] not in const.symbols_delims[next_next_temp]:
-                    return None
-                token_cpy = re.sub(re.escape(next_next_temp), '', token, count=1)
-                return next_next_temp, token_cpy    
-            elif next_temp in const.compound_symbols:
-                if token[i+2] not in const.symbols_delims[next_temp]:
-                    return None
-                token_cpy = re.sub(re.escape(next_temp), '', token, count=1)
-                return next_temp, token_cpy
-            else:
-                # if len(token)==1 and lex.is_Symbol(token):
-                #     return token, None
-                # if token[i+1] not in const.symbols_delims[char] :
-                #     return None
-                token_cpy = re.sub(re.escape(char), '', token, count=1)
-            return char, token_cpy
-         else:
-            return None
             
+def is_combined_op(curr, next):
+    return curr+next in const.compound_symbols
+    
+def get_operator(tokencode:str):
+    position=0
+    token=''
+    token_cpy=''
+   
+    char=tokencode[position]
+    if char==".": #isolated case for ...
+        token+=char
+        if tokencode[position+1]==".":
+            token+=tokencode[position+1]
+            if tokencode[position+2]==".":
+                token+=tokencode[position+2]
+                if tokencode[position+3] in const.symbols_delims["..."]:
+                    token_cpy=tokencode.replace(token, '', 1)
+                    return token, token_cpy
+    elif char in const.single_symbols:
+        token+=char
+        try:
+            if tokencode[position+1] in const.symbols_delims[char]:
+                token_cpy=tokencode.replace(char, '', 1)
+                return char, token_cpy
+        except IndexError:
+            return None
+        else: #else, it should be compound
+            position+=1
+            token+=tokencode[position]    
+            if token not in const.compound_symbols:
+                return None
+                # token_cpy=tokencode.replace(token, '', 1)
+                # return f"Invalid Delimiter {tokencode[position]}", token_cpy    
+            else:
+                position+=1
+                token_cpy=tokencode.replace(token, '', 1)
+                if tokencode[position] in const.symbols_delims[token]: #if valid delim for compound symbol  
+                    return token, token_cpy
+                else:
+                    return None
+                
+def get_symbol(token):
+    try:
+        size=len(token)
+        i=0
+        symbol_buffer=''
+        if token[i]=="#" and len(token)==1:
+            return token, token.replace(token, '', 1)
+        elif token[i] in const.all_symbols_nonop and token[i+1] in const.symbols_delims[token[i]]:
+            symbol_buffer+=token[i]
+            return token[i], token.replace(token[i], '', 1)
+        elif token[i:i+2]=="::" and token[i+2] in const.symbols_delims["::"]: 
+                return "::", token.replace("::", '', 1)
+        
+    except IndexError:
+        if token in const.grouping_symbols and None in const.symbols_delims[token]:
+            return token, token.replace(token, '', 1)
 
 def get_space(token):
-    token_cpy=''
+    token_cpy=token
     temp_token=''
     space_detected=False
-    space=r'\s'
+    space=" "
     for char in token:
-        if re.match(space, char):
-            token_cpy=re.sub(space, '',token, count=1)
-            return char, token_cpy       
+        # if re.match(space, char):
+        #     token_cpy=re.sub(space, '',token, count=1)
+        #     return char, token_cpy       
+        if char==" ":
+            token_cpy=token.replace(char, '', 1)
+            return char, token_cpy
+        else:return None
     
 def get_text(token):
     #Returns the text token and the remaining code
@@ -152,8 +228,9 @@ def get_text(token):
             check_concat=char+token[i+1]+token[i+2]
         except IndexError:
             check_concat=''
-        if (char in const.delimiters["txt_delim"] or check_concat=="...") and lex.is_Text(temp_token):
-            token_cpy=re.sub(temp_token, '',token, count=1)
+        if (char in const.delimiters["txt_delim"] or check_concat=="...") and tkc.LexerCheck.is_Text(temp_token):
+
+            token_cpy=token.replace(temp_token, '', 1)
             return temp_token, token_cpy       
         else:
             temp_token+=char
@@ -164,98 +241,14 @@ def get_next_char(input_string, current_index):
     else:
         return None
         
+# def get_comments(remaining_line, remaining_all):
+#     for char in remaining_line:
+#         if char 
+#in development
 
 
-def gettokens(code):
-    # Iterate through a line of code per character and return as a list of tokens
-    # Check each character
-    tokencode = code
-    tokens = []
-    current_token:str = ''
-    tktype = ''
+#endregion
 
-    while tokencode:
-        if get_keyword(tokencode):
-            result=get_keyword(tokencode)
-            if result is not None:
-                current_token, tokencode = result
-            else: continue
-            tktype = "keyword"
-        elif get_identifier(tokencode):
-            result=get_identifier(tokencode)
-            if result is not None:
-                current_token, tokencode = result
-                
-            else: continue
-            tktype = "identifier"
-        elif get_text(tokencode):
-            result=get_text(tokencode)
-            if result is not None:
-                current_token, tokencode = result
-            else: continue
-            tktype = "text"
-        elif get_dec(tokencode):
-            result=get_dec(tokencode)
-            if result is not None:
-                current_token, tokencode = result
-            else: continue
-            tktype = "dec"
-        elif get_whole(tokencode):
-            result=get_whole(tokencode)
-            if result is not None:
-                current_token, tokencode = result
-            else: continue
-            tktype = "whole"
-        elif get_symbol(tokencode):
-            result=get_symbol(tokencode)
-            if result is not None:
-                current_token, tokencode = result
-            else: continue
-            tktype = "symbol"
-        else:
-            print(f"may pumasok dito tc:{tokencode} ct:{current_token} t:{tokens}")
-            if tokencode:
-                print("outerif")
-                if current_token is None or current_token=='':
-                    print("interrif")
-                    current_token=tokencode
-                    tokens.append(tokencode)
-                    tokencode=None
-                    tokens.append(None)
-                    break
-            # if current_token[-1]
-        #    print(f"pasok sa else par {current_token}, {tokencode}, {tokens}")
-        #    current_token=tokencode
-        #    tokencode=None
-        #    if current_token is None or current_token=='' or current_token==' ':
-        #        print("pumasok sa if")
-        #        error=lex.error_handler(None, tokens, None)
-        #        print(error)
-        #    else:
-        #     # print("Else loob gettokens")
-        #     # category=lex.categorize(current_token)
-        #     # error=lex.error_handler(current_token, tokens, tokencode)
-        #     # print(error," for ", current_token)
-        #     print(f"Pumasok sa else, {tokencode} {current_token} ")
-        #     tokens.append(current_token)
-        #     current_token=''
-        
-            
-            
-            else:
-                print("else labas")
-                tokens.append("None")
-                break
-            
-        
-        if current_token:
-                tokens.append(current_token)
-                current_token = ''
-        else: #Handles null chars
-            print("Else labas gettokens")
-            error=lex.error_handler(None, tokens, None)
-            print(error, "for", current_token)
-    return tokens
 
 def prepare(code):
 #Prepares the code for tokenization. Removes comments, extra newline characters, and extra spaces.

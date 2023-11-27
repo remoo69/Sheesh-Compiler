@@ -16,28 +16,31 @@ def fill_lex_table():
 def run_lex():
     print("Button pressed")
     code=txt_editor_pane.get("1.0", END)
-    tokens,category,error=lex.tokenize(code)
-    print(tokens)
-    print_lex(tokens, category)
+    tokens,error=lex.Lexer.tokenize(code)
+    print_lex(tokens)
     print_error(error)
     lex_table_pane.config(state="disabled")
     error_pane.config(state="disabled")
 
-def print_lex(value, type):                      # Print Text to Lexical Pane
+def print_lex(tokenlist):                      # Print Text to Lexical Pane
     print("Printing lex")
     lex_table_pane.config(state="normal")
     lex_table_pane.delete('1.0', constants.END)
     lex_table_pane.insert(constants.END, "LEXEME\t\t\tTOKEN\n\n")
-    token,category=prep.remove_whitespace_type(value,type)
-    for j,char in enumerate(token):
-        if category[j]=="Keyword" or category[j]=="Symbol" or category[j]=="Operator":
-            category[j]=char
-    for i in range(len(token)):
+    # token=prep.remove_whitespace_type(value,type)
+    # j=0
+    # while j < len(tokenlist):
+        # if category[j]=="Keyword" or category[j]=="Symbol" or category[j]=="Operator":
+        #     category[j]=char
+    for i in range(len(tokenlist)):
         # if type[i] == 'Error Category' or type[i] == 'Whitespace' or type[i] == 'None':
         #     continue
         # else:  
-        lex_table_pane.insert(
-            constants.END, f'{str(token[i]) if len(str(token[i]))<=15 else str(token[i])[:10] + "..."}\t\t\t{str(category[i])}\n')
+        if tokenlist[i].type=="Whitespace":
+            continue
+        else:
+            lex_table_pane.insert(
+                constants.END, f'{str(tokenlist[i].value) if len(str(tokenlist[i].value))<=15 else str(tokenlist[i])[:10] + "..."}\t\t\t{str(tokenlist[i].type)}\n')
 
 
 def print_error(error):
@@ -166,6 +169,7 @@ error_pane.place(x=10,y=435,
 
 # run lexer function button
 run_img = PhotoImage(file="assets/run.png") 
+load_img=PhotoImage(file="assets/load.png")
 lex_btn = Button(
         image=run_img,
         compound=LEFT,
@@ -180,7 +184,7 @@ lex_btn = Button(
 )
 lex_btn.place(x=15,y=10,width=25,height=25)
 load_btn=Button(
-    image=run_img,
+    image=load_img,
         compound=LEFT,
         bg=clr_gray,
         borderwidth=0,

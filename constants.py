@@ -23,18 +23,26 @@ null = None
 space = [' ']
 esc_seq = [r'\t', r'\n', r'\"', r'\\', r'\$']
 op = aop+rop2+lop
-symbols = op+comma+space+[ '#', '_', '.', '@', '^', '&', '(', ')', '`', '“', '~', ':', '?', '$', ';', '[', ']', '\\', '{', '}', '/', '`', '^']
+symbols = op+comma+[ '#', '_', '.', '@', '^', '&', '(', ')', '`', '“', '~', '::', '?', '$', ';', '[', ']', '\\', '{', '}', '/', '`', '^']#space+
 alph_all = abc_cap+abc_small
 alph_num = alph_all+digits+zero
 alph_id = alph_num+['_']
 comments = alph_num+symbols
 text = alph_num+esc_seq+op+comma+space+['#', '_', '.', '@', '^', '&', '(', ')', '`', '~', ':', '?', '$', ';', '[', ']', '{', '}', '/', '`', '^']
-single_symbols=aop+rop2+lop+comma
-compound_symbols=asop+rop1+concat
+single_symbols=aop+rop2+lop
+compound_symbols=['+=', '-=', '*=', '/=', '%=','==', '!=','<=', '>=']
 all_op=op+asop+rop1+lop+comma+concat+rop2
 non_op=comma+['#', '_', '.', '@', '^', '&', '(', ')', '`', '~', ':', '?', '$', ';', '[', ']', '{', '}', '/', '`', '^']
 whitespace=space+['\n', '\t']
+grouping_symbols=["{","}", "(", ")", "[", "]" ]
+other_symbols=["#", "::", ]
+all_symbols_nonop=grouping_symbols+other_symbols
+invalid_id_char=op+comma+['#', '.', '@', '^', '&', '(', ')', '`', '~', ':', '?', '$', ';', '[', ']', '{', '}', '/', '\\', '`', '^', "'", '"']
+invalid_text_char=['"', "\\"]
 #Delimiters used in the Transition Diagram/DFA
+
+
+
 delimiters = {
     "op": op,
     "comma": comma,
@@ -47,17 +55,18 @@ delimiters = {
     "delim4": [" ","\\","{"],
     "delim5": alph_num+[" ","("],
     "delim6": alph_num+[" "],
-    "delim7": [" ","\\","}"],
+    "delim7": [" ","\\","}", ""],
     "delim8": [" ","\\"],
-    "delim9": alph_num+[" ","(","{"],
+    "delim9": alph_num+[" ","(","{", "!", '"'],#added "
     "delim10": alph_all+[" ","(","!"],
     "delim11": alph_num+[" ","(","!"],
     "delim12": op+comma+[" ","#","[",")"],
-    "delim13": alph_num+[" ","\\","("],
+    "delim13": alph_num+[" ","\\","(", None],
     "delim14": alph_all+[" ","#",None],
-    "delim15": alph_num+[" ","-", "!","("],
-    "delim16": op+comma+[" ", "#", ")", "}", ":"],
+    "delim15": alph_num+[" ", "!","(", ")", '"'],#added ); removed -; added "
+    "delim16": op+comma+[" ", "#", ")", "{","}", ":"],#added {
     "delim17": alph_num+[" ", '"', "\\"],
+    "delim20": '"',
     "txt_delim": comma+[" ", "#", ")", "}", ":"], #removed concat
     "blk_delim": [" ", "\\",None],
     "id_delim": op+comma+[" ", "#", "(",")", "[", "]", "{"],
@@ -90,7 +99,9 @@ keywords_delims={"text":delimiters["delim1"],
                  "bigay":delimiters["delim3"],
                  "kuha":delimiters["delim3"]}
 
-symbols_delims={"+":delimiters["delim5"],
+symbols_delims={
+#------------------------------------- Operators ------------------------------------------------------    
+                "+":delimiters["delim5"],
                 "+=":delimiters["delim5"],
                 "-":delimiters["delim5"],
                 "-=":delimiters["delim5"],
@@ -100,9 +111,6 @@ symbols_delims={"+":delimiters["delim5"],
                 "/=":delimiters["delim5"],
                 "%":delimiters["delim5"],
                 "%=":delimiters["delim5"],
-                ",":delimiters["delim6"],
-                "#":delimiters["delim7"],
-                "::":delimiters["delim8"],
                 "=":delimiters["delim9"],
                 "==":delimiters["delim6"],
                 ">":delimiters["delim5"],
@@ -113,17 +121,22 @@ symbols_delims={"+":delimiters["delim5"],
                 "!=":delimiters["delim5"],
                 "&":delimiters["delim11"],
                 "|":delimiters["delim11"],
+                "...":'"',
+#------------------------------------- Symbols ------------------------------------------------------
                 "[":delimiters["delim5"],
                 "]":delimiters["delim12"],
                 "{":delimiters["delim13"],
                 "}":delimiters["delim14"],
                 "(":delimiters["delim15"],
                 ")":delimiters["delim16"],
+                ",":delimiters["delim6"],
+                "#":delimiters["delim7"],
+                "::":delimiters["delim8"],
                 r"\n":delimiters["delim17"],
                 r"\"":delimiters["delim17"],
                 r"\t":delimiters["delim17"],
                 r"\$":delimiters["delim17"],
-                "...":'"',
+                
                 ' ': delimiters["space_delim"]}
 
 RE_Literals={"text": r'^\"(?:(?!(?<!\\)").|\\")*\"$',
@@ -136,7 +149,52 @@ RE_Identifier=r'[a-zA-Z][a-zA-Z0-9_]*$' #removed {0,8}
 RE_BlockComment=r'/\*.*?\*/'
 RE_InlineComment=r'//.*?\n'
 
+MAX_IDEN_LENGTH=9
 WHOLE_MIN=-32768
 WHOLE_MAX=32767
 DEC_MIN=-32768.999999
 DEC_MAX=32767.999999
+
+# state_map=  { #no keywords due to ease of detection; also no whitespace
+#     "Identifier":{
+#         "Start":alph_all,
+#         "Active":alph_id,
+#         "End":delimiters["id_delim"]
+#     },
+#     "Symbol":{
+#         "Start":alph_all,
+#         "Active":alph_id,
+#         "End":delimiters["id_delim"]
+#     },
+#     "Operator":{
+#         "Start":alph_all,
+#         "Active":alph_id,
+#         "End":delimiters["id_delim"]
+#     },
+
+#     "Literals":{
+#         "Whole":{
+#             "Start":["(-", 0]+digits,
+#             "Active":[0,digits],
+#             "End":delimiters["n_delim"]
+#         },
+#         "Dec":{
+#             "Start":["(-", 0]+digits,
+#             "Active":[0, digits, "."],
+#             "End":delimiters["n_delim"]
+#         },
+#         "Text":{
+#             "Start": '"',
+#             "Active":text,
+#             "End":'"'+delimiters["txt_delim"]
+#         },
+#         # "Lit":{   #removed due to ease of detection
+#         #     "Start":alph_all,
+#         #     "Active":alph_id,
+#         #     "End":delimiters["id_delim"]
+#         # },
+
+#     }
+    
+    
+# }
