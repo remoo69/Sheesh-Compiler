@@ -1,0 +1,10 @@
+sheesh(){
+    whole n = (-20)#
+    if((n+20) < 0){
+        n -= 20
+    }
+    deins{
+        n += 20
+    }
+    bruh#
+}
